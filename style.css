@@ -1,0 +1,48 @@
+/* 推理强度快调 - 魔棒菜单条目样式 */
+
+#reasoning_quick_menu {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 6px 10px;
+    cursor: default;
+}
+
+#reasoning_quick_menu .rqs-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 13px;
+    opacity: 0.9;
+}
+
+#reasoning_quick_menu .rqs-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+#reasoning_quick_menu .rqs-chip {
+    border: 1px solid var(--SmartThemeBorderColor, rgba(128, 128, 128, 0.5));
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 12px;
+    line-height: 1.4;
+    cursor: pointer;
+    user-select: none;
+    opacity: 0.85;
+    transition: background 0.15s ease, transform 0.1s ease;
+}
+
+#reasoning_quick_menu .rqs-chip:active {
+    transform: scale(0.96);
+}
+
+#reasoning_quick_menu .rqs-chip.rqs-active {
+    background: var(--SmartThemeEmColor, #7a63cf);
+    border-color: transparent;
+    color: #ffffff;
+    opacity: 1;
+    font-weight: 600;
+}
