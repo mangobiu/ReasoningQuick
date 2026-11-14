@@ -1,14 +1,17 @@
 /*
- * 推理强度快调 (Reasoning Effort Quick Switch)
+ * 推理强度快调 (Reasoning Quick Switch) v1.1.0
  * 面向 TauriTavern / SillyTavern 的第三方扩展。
- * 在左下角魔棒菜单中加入一排档位按钮，点击即修改
- * 「AI 响应配置 → 推理强度」(#openai_reasoning_effort)，
- * 并派发原生 change 事件，由宿主自行保存设置。
+ *
+ * v1.1.0 新增:
+ * - 启动时自动把推理强度设为「高」(覆盖预设里自带的 low)
+ * - 切换模型 / API 来源 / 预设时,自动恢复「高」
+ * - 魔棒菜单手动切换不受影响,聊的过程中手动改了就保持
  */
 (function () {
     'use strict';
 
     const EXT_ID = 'reasoning_quick_menu';
+    const DEFAULT_LEVEL = 'high';
 
     const LEVELS = [
         { v: 'auto',   label: '自动' },
@@ -48,22 +51,67 @@
         }
     }
 
-    function setLevel(v) {
+    function setLevel(v, opts) {
         const sel = getSelect();
-        if (!sel) {
-            toast('未找到推理强度控件，当前 API 可能不支持', 'warning');
-            return;
-        }
+        if (!sel) { return false; }
         const exists = Array.from(sel.options).some(o => o.value === v);
-        if (!exists) {
-            toast('当前模型/接口没有「' + labelOf(v) + '」这一档', 'warning');
-            return;
-        }
+        if (!exists) { return false; }
+        const changed = sel.value !== v;
         sel.value = v;
         sel.dispatchEvent(new Event('change', { bubbles: true }));
         updateChips();
-        toast('推理强度已切换：' + labelOf(v), 'success');
+        if (!opts || !opts.silent) {
+            toast(changed ? ('推理强度已切换：' + labelOf(v)) : ('推理强度当前就是：' + labelOf(v)), 'success');
+        }
+        return true;
     }
+
+    /* ---- 自动默认:启动/模型/预设变更时恢复「高」 ---- */
+
+    let autoApplying = false;
+
+    function applyDefault(reason) {
+        if (autoApplying) { return; }
+        const sel = getSelect();
+        if (!sel) { return; }
+        if (sel.value === DEFAULT_LEVEL) { return; }  // 已是高,不折腾
+        autoApplying = true;
+        try {
+            setLevel(DEFAULT_LEVEL, { silent: true });
+            toast('推理强度已自动设为：高（' + reason + '）', 'info');
+        } finally {
+            setTimeout(() => { autoApplying = false; }, 300);
+        }
+    }
+
+    /* 模型/API来源/预设 变化的特征签名 */
+    function modelSignature() {
+        const parts = [];
+        const src = document.getElementById('chat_completion_source');
+        if (src) { parts.push(src.value); }
+        const mainApi = document.getElementById('main_api');
+        if (mainApi) { parts.push(mainApi.value); }
+        const preset = document.getElementById('settings_preset_openai');
+        if (preset) { parts.push(preset.value); }
+        document.querySelectorAll('select[id^="model_"]').forEach(s => {
+            parts.push(s.id + '=' + s.value);
+        });
+        return parts.join('|');
+    }
+
+    function startModelWatch() {
+        let last = modelSignature();
+        setInterval(() => {
+            const cur = modelSignature();
+            if (cur !== last) {
+                last = cur;
+                // 稍等宿主把预设/模型带出来的推理强度落盘,再拉回默认
+                setTimeout(() => applyDefault('检测到模型/预设变更'), 600);
+            }
+        }, 2500);
+    }
+
+    /* ---- 魔棒菜单 UI ---- */
 
     function build(menu) {
         if (document.getElementById(EXT_ID)) { return; }
@@ -103,7 +151,7 @@
         if (sel) {
             sel.addEventListener('change', updateChips);
         }
-        toast('推理强度快调已就绪（魔棒菜单）');
+        toast('推理强度快调 v1.1.0 已就绪');
     }
 
     function waitForMenu() {
@@ -113,6 +161,9 @@
             if (menu) {
                 clearInterval(timer);
                 build(menu);
+                // 启动默认:等宿主加载完预设/模型后再拉回「高」
+                setTimeout(() => applyDefault('启动'), 1500);
+                startModelWatch();
                 return;
             }
             if (Date.now() - started > 60000) {
