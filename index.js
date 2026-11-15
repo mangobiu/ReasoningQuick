@@ -1,8 +1,14 @@
 /*
- * 推理强度快调 (Reasoning Quick Switch) v1.2.0
+ * 推理强度快调 (Reasoning Quick Switch) v1.3.0
  * 面向 TauriTavern / SillyTavern 的第三方扩展。
  *
- * v1.2.0 新增:
+ * v1.3.0 变更（外观重做）:
+ * - 输入框上方档位条改为「分段控件」：一条浅灰底板 + 四格等分，靠右放置
+ * - 去掉 🧠 图标与每格的独立边框，高度 36px → 30px
+ * - 点档位不再弹 toast，直接静默生效（高亮就是反馈）
+ * - 当前接口不支持推理强度时，整条降到 35% 透明度并禁用点击
+ *
+ * v1.2.0 保留:
  * - 输入框上方常驻「档位条」: 低 | 高 | 极高 | 最高 四芯片
  *   · 单击芯片直接切档(无循环)
  *   · 当前档位高亮;当前档不在四芯片内时动态补显
@@ -35,6 +41,12 @@
 
     function getSelect() {
         return document.getElementById('openai_reasoning_effort');
+    }
+
+    /** 宿主是否真的提供了推理强度选项（原生补全类接口没有这个控件） */
+    function isSupported() {
+        const sel = getSelect();
+        return !!(sel && sel.options && sel.options.length > 0);
     }
 
     function labelOf(v) {
@@ -72,12 +84,16 @@
         const bar = document.getElementById(BAR_ID);
         if (!bar) { return; }
 
+        // 接口不支持时整条置灰禁用
+        bar.classList.toggle('rqs-off', !isSupported());
+
         // 常驻四芯片高亮
         bar.querySelectorAll('.rqs-bchip[data-v]').forEach(chip => {
             chip.classList.toggle('rqs-active', chip.dataset.v === cur);
         });
 
         // 动态补显:当前档不在常驻芯片里时,临时挂一个芯片
+        const seg = bar.querySelector('.rqs-seg') || bar;
         const extra = document.getElementById('rqs_bchip_extra');
         if (cur && !BAR_LEVELS.includes(cur)) {
             if (extra) {
@@ -90,8 +106,8 @@
                 chip.className = 'rqs-bchip rqs-active';
                 chip.dataset.v = cur;
                 chip.textContent = labelOf(cur);
-                chip.addEventListener('click', () => setLevel(cur));
-                bar.appendChild(chip);
+                chip.addEventListener('click', () => setLevel(cur, { silent: true }));
+                seg.appendChild(chip);
             }
         } else if (extra) {
             extra.remove();
@@ -153,6 +169,8 @@
             // 档位条被宿主重渲染冲掉时自动挂回
             const bar = document.getElementById(BAR_ID);
             if (!bar || !bar.isConnected) { buildBar(); }
+            // 接口可切换（例如从补全接口切到 Chat Completion）时,置灰状态跟着刷新
+            else { bar.classList.toggle('rqs-off', !isSupported()); }
 
             const cur = modelSignature();
             if (cur !== last) {
@@ -172,18 +190,17 @@
         const bar = document.createElement('div');
         bar.id = BAR_ID;
 
-        const icon = document.createElement('span');
-        icon.className = 'rqs-bar-icon';
-        icon.textContent = '🧠';
-        bar.appendChild(icon);
+        const seg = document.createElement('div');
+        seg.className = 'rqs-seg';
+        bar.appendChild(seg);
 
         for (const v of BAR_LEVELS) {
             const chip = document.createElement('span');
             chip.className = 'rqs-bchip';
             chip.dataset.v = v;
             chip.textContent = labelOf(v);
-            chip.addEventListener('click', () => setLevel(v));
-            bar.appendChild(chip);
+            chip.addEventListener('click', () => setLevel(v, { silent: true }));
+            seg.appendChild(chip);
         }
 
         if (form && form.parentElement) {
@@ -245,6 +262,7 @@
             if (menu) {
                 clearInterval(timer);
                 build(menu);
+                buildBar();   // v1.3.0: 立即挂出档位条，不再等 2.5s 轮询
                 setTimeout(() => applyDefault('启动'), 1500);
                 startWatch();
                 return;
