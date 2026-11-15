@@ -46,3 +46,47 @@
     opacity: 1;
     font-weight: 600;
 }
+
+/* ---------- 输入框上方档位条 ---------- */
+
+#rqs_bar {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 8px;
+    width: 100%;
+}
+
+#rqs_bar .rqs-bar-icon {
+    font-size: 13px;
+    opacity: 0.85;
+}
+
+#rqs_bar .rqs-bchip {
+    flex: 1 1 0;
+    text-align: center;
+    border: 1px solid var(--SmartThemeBorderColor, rgba(128, 128, 128, 0.5));
+    border-radius: 999px;
+    padding: 5px 0;
+    font-size: 13px;
+    line-height: 1.4;
+    cursor: pointer;
+    user-select: none;
+    opacity: 0.85;
+    transition: background 0.15s ease, transform 0.1s ease;
+}
+
+#rqs_bar .rqs-bchip:active {
+    transform: scale(0.96);
+}
+
+#rqs_bar .rqs-bchip.rqs-active {
+    background: var(--SmartThemeEmColor, #7a63cf);
+    border-color: transparent;
+    color: #ffffff;
+    opacity: 1;
+    font-weight: 600;
+}
