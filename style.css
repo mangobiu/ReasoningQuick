@@ -1,4 +1,21 @@
-/* 推理强度快调 - 魔棒菜单条目样式 */
+/* ============================================================
+ * 推理强度快调 · 样式表  v1.3.0
+ *
+ * 目录：
+ *   ① 魔棒菜单条目（原样保留）
+ *   ② 输入框上方「档位条」——分段控件（v1.3.0 重做）
+ *
+ * 想微调档位条，只改 #rqs_bar 里那几个 --rqs-* 变量就行：
+ *   --rqs-inset     左右留白（默认 8px，想和输入框对齐就改成和输入框一样的值）
+ *   --rqs-track-bg  整条底板颜色
+ *   --rqs-active-bg 当前档位的底色
+ *
+ * 颜色统一用「中性灰 + 透明度」写法 rgba(128,128,128,x)：
+ * 深色主题下它是"浅一点的灰"，浅色主题下自动变成"深一点的灰"，
+ * 不会像写死颜色那样换主题就翻车。
+ * ============================================================ */
+
+/* ---------- ① 魔棒菜单条目 ---------- */
 
 #reasoning_quick_menu {
     flex-direction: column;
@@ -47,46 +64,73 @@
     font-weight: 600;
 }
 
-/* ---------- 输入框上方档位条 ---------- */
+/* ---------- ② 输入框上方档位条：分段控件 ---------- */
 
 #rqs_bar {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    gap: 6px;
-    align-items: center;
-    justify-content: center;
-    padding: 4px 8px;
+    /* ===== 可调参数（改这三行就能换大小 / 颜色） ===== */
+    --rqs-inset: 8px;
+    --rqs-track-bg: rgba(128, 128, 128, 0.10);
+    --rqs-track-line: rgba(128, 128, 128, 0.12);
+    --rqs-active-bg: rgba(128, 128, 128, 0.30);
+
     width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: flex-end;   /* 靠右，宽度只包住内容 */
+    align-items: center;
+    padding: 0 var(--rqs-inset);
+    margin: 2px 0 3px;
 }
 
-#rqs_bar .rqs-bar-icon {
-    font-size: 13px;
-    opacity: 0.85;
+/* 里面的灰色底板：把四个档位框成"一个控件" */
+#rqs_bar .rqs-seg {
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 9px;
+    background: var(--rqs-track-bg);
+    border: 1px solid var(--rqs-track-line);
+    max-width: 100%;
 }
 
 #rqs_bar .rqs-bchip {
-    flex: 1 1 0;
-    text-align: center;
-    border: 1px solid var(--SmartThemeBorderColor, rgba(128, 128, 128, 0.5));
-    border-radius: 999px;
-    padding: 5px 0;
-    font-size: 13px;
-    line-height: 1.4;
+    flex: 0 0 auto;
+    min-width: 50px;             /* 固定最小宽度：加粗切换时不会跳版 */
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    font-size: 12px;
+    line-height: 1;
+    color: var(--SmartThemeBodyColor, #d6d6d6);
+    opacity: 0.5;
     cursor: pointer;
     user-select: none;
-    opacity: 0.85;
-    transition: background 0.15s ease, transform 0.1s ease;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s ease, opacity 0.15s ease, transform 0.1s ease;
+}
+
+#rqs_bar .rqs-bchip.rqs-active {
+    background: var(--rqs-active-bg);
+    opacity: 1;
+    font-weight: 600;
 }
 
 #rqs_bar .rqs-bchip:active {
     transform: scale(0.96);
 }
 
-#rqs_bar .rqs-bchip.rqs-active {
-    background: var(--SmartThemeEmColor, #7a63cf);
-    border-color: transparent;
-    color: #ffffff;
-    opacity: 1;
-    font-weight: 600;
+/* 接口不支持推理强度时：整条变淡且点不动，一眼看出"这里没得选" */
+#rqs_bar.rqs-off {
+    opacity: 0.35;
+    pointer-events: none;
+}
+
+/* 兼容旧版残留的图标节点（新版已不再创建） */
+#rqs_bar .rqs-bar-icon {
+    display: none;
 }
