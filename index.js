@@ -1,16 +1,23 @@
 /*
- * 推理强度快调 (Reasoning Quick Switch) v1.1.0
+ * 推理强度快调 (Reasoning Quick Switch) v1.2.0
  * 面向 TauriTavern / SillyTavern 的第三方扩展。
  *
- * v1.1.0 新增:
- * - 启动时自动把推理强度设为「高」(覆盖预设里自带的 low)
- * - 切换模型 / API 来源 / 预设时,自动恢复「高」
- * - 魔棒菜单手动切换不受影响,聊的过程中手动改了就保持
+ * v1.2.0 新增:
+ * - 输入框上方常驻「档位条」: 低 | 高 | 极高 | 最高 四芯片
+ *   · 单击芯片直接切档(无循环)
+ *   · 当前档位高亮;当前档不在四芯片内时动态补显
+ * - 档位条随窗口重渲染自动挂回
+ *
+ * v1.1.0 保留:
+ * - 启动时自动把推理强度设为「高」(覆盖预设自带的 low)
+ * - 切换模型 / API 来源 / 预设时自动恢复「高」
+ * - 魔棒菜单芯片照常可用
  */
 (function () {
     'use strict';
 
-    const EXT_ID = 'reasoning_quick_menu';
+    const EXT_ID = 'reasoning_quick_menu';   // 魔棒菜单条目
+    const BAR_ID = 'rqs_bar';                // 输入框上方档位条
     const DEFAULT_LEVEL = 'high';
 
     const LEVELS = [
@@ -19,9 +26,12 @@
         { v: 'low',    label: '低' },
         { v: 'medium', label: '中' },
         { v: 'high',   label: '高' },
-        { v: 'xhigh',  label: '超高' },
+        { v: 'xhigh',  label: '极高' },
         { v: 'max',    label: '最高' },
     ];
+
+    /** 档位条上常驻显示的芯片(按用户要求:低/高/极高/最高) */
+    const BAR_LEVELS = ['low', 'high', 'xhigh', 'max'];
 
     function getSelect() {
         return document.getElementById('openai_reasoning_effort');
@@ -39,17 +49,56 @@
         } catch (_) { console.log('[推理强度快调]', msg); }
     }
 
+    /* ---------- 状态同步:魔棒芯片 + 档位条 一起刷新 ---------- */
+
     function updateChips() {
         const sel = getSelect();
         const cur = sel ? sel.value : '';
+
+        // 魔棒菜单芯片
         document.querySelectorAll('#' + EXT_ID + ' .rqs-chip').forEach(chip => {
             chip.classList.toggle('rqs-active', chip.dataset.v === cur);
         });
-        const label = document.getElementById('rqs_current');
-        if (label) {
-            label.textContent = cur ? ('推理强度：' + labelOf(cur)) : '推理强度（当前接口未开放）';
+        const wandLabel = document.getElementById('rqs_current');
+        if (wandLabel) {
+            wandLabel.textContent = cur ? ('推理强度：' + labelOf(cur)) : '推理强度（当前接口未开放）';
+        }
+
+        // 输入框上方档位条
+        updateBar(cur);
+    }
+
+    function updateBar(cur) {
+        const bar = document.getElementById(BAR_ID);
+        if (!bar) { return; }
+
+        // 常驻四芯片高亮
+        bar.querySelectorAll('.rqs-bchip[data-v]').forEach(chip => {
+            chip.classList.toggle('rqs-active', chip.dataset.v === cur);
+        });
+
+        // 动态补显:当前档不在常驻芯片里时,临时挂一个芯片
+        const extra = document.getElementById('rqs_bchip_extra');
+        if (cur && !BAR_LEVELS.includes(cur)) {
+            if (extra) {
+                extra.dataset.v = cur;
+                extra.textContent = labelOf(cur);
+                extra.classList.add('rqs-active');
+            } else {
+                const chip = document.createElement('span');
+                chip.id = 'rqs_bchip_extra';
+                chip.className = 'rqs-bchip rqs-active';
+                chip.dataset.v = cur;
+                chip.textContent = labelOf(cur);
+                chip.addEventListener('click', () => setLevel(cur));
+                bar.appendChild(chip);
+            }
+        } else if (extra) {
+            extra.remove();
         }
     }
+
+    /* ---------- 切档 ---------- */
 
     function setLevel(v, opts) {
         const sel = getSelect();
@@ -66,7 +115,7 @@
         return true;
     }
 
-    /* ---- 自动默认:启动/模型/预设变更时恢复「高」 ---- */
+    /* ---------- 自动默认:启动/模型/预设变更时恢复「高」 ---------- */
 
     let autoApplying = false;
 
@@ -74,7 +123,7 @@
         if (autoApplying) { return; }
         const sel = getSelect();
         if (!sel) { return; }
-        if (sel.value === DEFAULT_LEVEL) { return; }  // 已是高,不折腾
+        if (sel.value === DEFAULT_LEVEL) { return; }
         autoApplying = true;
         try {
             setLevel(DEFAULT_LEVEL, { silent: true });
@@ -84,7 +133,6 @@
         }
     }
 
-    /* 模型/API来源/预设 变化的特征签名 */
     function modelSignature() {
         const parts = [];
         const src = document.getElementById('chat_completion_source');
@@ -99,19 +147,56 @@
         return parts.join('|');
     }
 
-    function startModelWatch() {
+    function startWatch() {
         let last = modelSignature();
         setInterval(() => {
+            // 档位条被宿主重渲染冲掉时自动挂回
+            const bar = document.getElementById(BAR_ID);
+            if (!bar || !bar.isConnected) { buildBar(); }
+
             const cur = modelSignature();
             if (cur !== last) {
                 last = cur;
-                // 稍等宿主把预设/模型带出来的推理强度落盘,再拉回默认
                 setTimeout(() => applyDefault('检测到模型/预设变更'), 600);
             }
         }, 2500);
     }
 
-    /* ---- 魔棒菜单 UI ---- */
+    /* ---------- 档位条(输入框上方) ---------- */
+
+    function buildBar() {
+        if (document.getElementById(BAR_ID)) { return; }
+
+        const form = document.getElementById('send_form');
+        const qrBar = document.getElementById('qr--bar');
+        const bar = document.createElement('div');
+        bar.id = BAR_ID;
+
+        const icon = document.createElement('span');
+        icon.className = 'rqs-bar-icon';
+        icon.textContent = '🧠';
+        bar.appendChild(icon);
+
+        for (const v of BAR_LEVELS) {
+            const chip = document.createElement('span');
+            chip.className = 'rqs-bchip';
+            chip.dataset.v = v;
+            chip.textContent = labelOf(v);
+            chip.addEventListener('click', () => setLevel(v));
+            bar.appendChild(chip);
+        }
+
+        if (form && form.parentElement) {
+            form.parentElement.insertBefore(bar, form);
+        } else if (qrBar && qrBar.parentElement) {
+            qrBar.parentElement.insertBefore(bar, qrBar);
+        } else {
+            document.body.appendChild(bar);
+        }
+        updateChips();
+    }
+
+    /* ---------- 魔棒菜单(保留) ---------- */
 
     function build(menu) {
         if (document.getElementById(EXT_ID)) { return; }
@@ -151,7 +236,6 @@
         if (sel) {
             sel.addEventListener('change', updateChips);
         }
-        toast('推理强度快调 v1.1.0 已就绪');
     }
 
     function waitForMenu() {
@@ -161,9 +245,8 @@
             if (menu) {
                 clearInterval(timer);
                 build(menu);
-                // 启动默认:等宿主加载完预设/模型后再拉回「高」
                 setTimeout(() => applyDefault('启动'), 1500);
-                startModelWatch();
+                startWatch();
                 return;
             }
             if (Date.now() - started > 60000) {
