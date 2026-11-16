@@ -1,29 +1,30 @@
 /*
- * 推理强度快调 (Reasoning Quick Switch) v1.3.0
+ * 推理强度快调 (Reasoning Quick Switch) v1.4.0
  * 面向 TauriTavern / SillyTavern 的第三方扩展。
  *
- * v1.3.0 变更（外观重做）:
- * - 输入框上方档位条改为「分段控件」：一条浅灰底板 + 四格等分，靠右放置
- * - 去掉 🧠 图标与每格的独立边框，高度 36px → 30px
- * - 点档位不再弹 toast，直接静默生效（高亮就是反馈）
- * - 当前接口不支持推理强度时，整条降到 35% 透明度并禁用点击
+ * v1.4.0 变更（与快捷回复栏合并）:
+ * - 档位条优先塞进快捷回复栏 #qr--bar 的最右边，两排并一排
+ * - 塞不进（没有 QR 栏）才退回老位置：输入框上方独立一行
+ * - 档位胶囊改成和 QR 按钮同款：透明底 + 1px 描边 + 圆角胶囊，
+ *   当前档用主题强调色点亮（魔棒菜单芯片同色，换主题自动跟）
+ * - 自身背景全透明，不再依赖宿主容器给的底色
  *
- * v1.2.0 保留:
- * - 输入框上方常驻「档位条」: 低 | 高 | 极高 | 最高 四芯片
- *   · 单击芯片直接切档(无循环)
- *   · 当前档位高亮;当前档不在四芯片内时动态补显
- * - 档位条随窗口重渲染自动挂回
+ * v1.3.0 保留:
+ * - 分段控件交互：点档位静默生效，高亮就是反馈
+ * - 接口不支持推理强度时，整条降透明度并禁用点击
  *
- * v1.1.0 保留:
- * - 启动时自动把推理强度设为「高」(覆盖预设自带的 low)
- * - 切换模型 / API 来源 / 预设时自动恢复「高」
+ * v1.2.0 / v1.1.0 保留:
+ * - 输入框上方常驻档位条: 低 | 高 | 极高 | 最高
+ * - 当前档不在常驻芯片内时动态补显
  * - 魔棒菜单芯片照常可用
+ * - 启动/切换模型/切换预设时自动恢复「高」(覆盖预设自带的 low)
+ * - 档位条随窗口重渲染自动挂回
  */
 (function () {
     'use strict';
 
     const EXT_ID = 'reasoning_quick_menu';   // 魔棒菜单条目
-    const BAR_ID = 'rqs_bar';                // 输入框上方档位条
+    const BAR_ID = 'rqs_bar';                // 档位条
     const DEFAULT_LEVEL = 'high';
 
     const LEVELS = [
@@ -76,7 +77,7 @@
             wandLabel.textContent = cur ? ('推理强度：' + labelOf(cur)) : '推理强度（当前接口未开放）';
         }
 
-        // 输入框上方档位条
+        // 档位条
         updateBar(cur);
     }
 
@@ -180,13 +181,14 @@
         }, 2500);
     }
 
-    /* ---------- 档位条(输入框上方) ---------- */
+    /* ---------- 档位条(v1.4.0: 优先并入快捷回复栏) ---------- */
 
     function buildBar() {
         if (document.getElementById(BAR_ID)) { return; }
 
         const form = document.getElementById('send_form');
         const qrBar = document.getElementById('qr--bar');
+
         const bar = document.createElement('div');
         bar.id = BAR_ID;
 
@@ -203,10 +205,12 @@
             seg.appendChild(chip);
         }
 
-        if (form && form.parentElement) {
+        if (qrBar) {
+            // v1.4.0: 和快捷回复按钮同排,靠右
+            bar.classList.add('rqs-inline');
+            qrBar.appendChild(bar);
+        } else if (form && form.parentElement) {
             form.parentElement.insertBefore(bar, form);
-        } else if (qrBar && qrBar.parentElement) {
-            qrBar.parentElement.insertBefore(bar, qrBar);
         } else {
             document.body.appendChild(bar);
         }
@@ -262,7 +266,7 @@
             if (menu) {
                 clearInterval(timer);
                 build(menu);
-                buildBar();   // v1.3.0: 立即挂出档位条，不再等 2.5s 轮询
+                buildBar();
                 setTimeout(() => applyDefault('启动'), 1500);
                 startWatch();
                 return;

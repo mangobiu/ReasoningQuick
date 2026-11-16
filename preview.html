@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>推理强度档位条 v1.4.0 · 改版前后对比</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    margin:0;background:#121212;color:#d6d6d6;
+    font-family:-apple-system,"Segoe UI","Noto Sans SC",system-ui,sans-serif;
+    padding:26px 14px 70px;
+  }
+  h1{font-size:17px;margin:0 0 8px;font-weight:600}
+  .sub{font-size:12.5px;color:#8d8d8d;line-height:1.75;margin-bottom:24px;max-width:760px}
+  .wrap{display:flex;flex-wrap:wrap;gap:28px;justify-content:flex-start;max-width:900px;margin:0 auto}
+  .col{width:390px;max-width:100%}
+  .cap{font-size:13px;font-weight:600;margin:0 0 9px;display:flex;align-items:center;gap:8px}
+  .tag{font-size:11px;font-weight:500;padding:2px 8px;border-radius:999px;background:#242424;border:1px solid #343434;color:#8d8d8d}
+  .tag.rec{background:#1d2a1b;border-color:#39512f;color:#94c47e}
+  .tag.bad{background:#2a1d1d;border-color:#513232;color:#c98a8a}
+  .note{font-size:11.5px;color:#7c7c7c;margin:8px 2px 0;line-height:1.7}
+
+  .phone{
+    width:100%;border-radius:20px;overflow:hidden;
+    background:#1F242A;border:1px solid #2e2e2e;
+    box-shadow:0 8px 24px rgba(0,0,0,.45);
+    display:flex;flex-direction:column;
+  }
+  .chat{height:150px;padding:14px 14px 6px;display:flex;flex-direction:column;gap:9px;overflow:hidden}
+  .bubble{background:#2a2f36;border-radius:10px;padding:9px 11px;font-size:12.5px;color:#c9c9c9;line-height:1.6;max-width:88%}
+  .bubble.me{align-self:flex-end;background:#31363d;color:#c4c4c4}
+  .fade{flex:1;mask-image:linear-gradient(#000 55%,transparent)}
+
+  /* ===== 现状(实测取色) ===== */
+  .now-band{
+    background:#333439;                 /* 亮带 */
+    border-top:3px solid #000105;       /* 黑线 */
+    border-bottom:3px solid #000105;
+    padding:10px 12px;
+    display:flex;justify-content:flex-end;
+  }
+  .now-seg{display:flex;gap:2px;padding:2px;border-radius:9px;
+    background:rgba(128,128,128,.10);border:1px solid rgba(128,128,128,.12)}
+  .now-seg span{min-width:50px;height:26px;display:flex;align-items:center;justify-content:center;
+    border-radius:7px;font-size:12px;color:#d6d6d6;opacity:.5;cursor:pointer}
+  .now-seg span.on{background:rgba(128,128,128,.30);opacity:1;font-weight:600}
+  .now-qr{
+    background:#222327;padding:10px 0;display:flex;justify-content:center;gap:10px;
+  }
+  .qrbtn{height:30px;padding:0 14px;border-radius:999px;border:1px solid rgba(160,168,178,.45);
+    background:transparent;color:#c9ccd1;font-size:12.5px;display:flex;align-items:center;cursor:pointer}
+
+  /* ===== v1.4.0 ===== */
+  .new-qr{
+    background:#222327;padding:7px 10px;
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+  }
+  .new-qr .left{display:flex;gap:8px;min-width:0}
+  .new-seg{display:flex;gap:6px;margin-left:auto;min-width:0}
+  .new-seg span{
+    flex:0 0 auto;min-width:40px;height:28px;padding:0 10px;
+    display:flex;align-items:center;justify-content:center;
+    border:1px solid rgba(160,168,178,.45);border-radius:999px;
+    background:transparent;color:#d6d6d6;font-size:12px;opacity:.72;cursor:pointer;
+    white-space:nowrap;transition:background .15s,opacity .15s;
+  }
+  .new-seg span.on{background:#7a63cf;border-color:transparent;color:#fff;opacity:1;font-weight:600}
+  .new-seg span:active{transform:scale(.96)}
+
+  .inputbar{
+    margin:9px 14px 12px;height:40px;border-radius:10px;border:1px solid #3a3a3a;
+    background:#2a2d31;display:flex;align-items:center;padding:0 12px;
+    font-size:12.5px;color:#8d8d8d;
+  }
+  .inputbar .send{margin-left:auto;font-size:15px;color:#bdbdbd}
+</style>
+</head>
+<body>
+<div class="wrap" style="display:block">
+  <h1>推理强度档位条 v1.4.0 · 改版前后对比</h1>
+  <div class="sub">
+    颜色取自你手机截图的实测值（正文 #1F242A / 亮带 #333439 / QR 行 #222327）。<br>
+    <b>点任意档位</b>可以试切换手感。右图高亮用的是主题强调色演示值（你的 TT 里会自动跟主题走）。
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- 现状 -->
+  <div class="col">
+    <div class="cap">现状 <span class="tag bad">三块补丁</span></div>
+    <div class="phone">
+      <div class="chat">
+        <div class="bubble">昨晚彻底高潮一番，第二天我清晨我没有收箭毒影响……</div>
+        <div class="bubble me">档位条落在一条发亮的横带上，上下还有黑线</div>
+        <div class="fade"></div>
+      </div>
+      <div class="now-band">
+        <div class="now-seg" data-group="now">
+          <span data-v="low">低</span><span class="on" data-v="high">高</span><span data-v="xhigh">极高</span><span data-v="max">最高</span>
+        </div>
+      </div>
+      <div class="now-qr">
+        <span class="qrbtn">重新生成</span>
+        <span class="qrbtn">浪潮·状态</span>
+      </div>
+      <div class="inputbar">输入想发送的消息，或输入 / 获取<span class="send">➤</span></div>
+    </div>
+    <div class="note">问题：① 亮带 #333439 比正文亮一截 ② 分段底板再叠一层 ③ 上下两条黑线硬切 ④ 两排共占 ~72px</div>
+  </div>
+
+  <!-- v1.4.0 -->
+  <div class="col">
+    <div class="cap">v1.4.0 合并后 <span class="tag rec">一排搞定</span></div>
+    <div class="phone">
+      <div class="chat">
+        <div class="bubble">昨晚彻底高潮一番，第二天我清晨我没有收箭毒影响……</div>
+        <div class="bubble me">亮带和黑线全没了，两排并一排，胶囊同款</div>
+        <div class="fade"></div>
+      </div>
+      <div class="new-qr">
+        <div class="left">
+          <span class="qrbtn">重新生成</span>
+          <span class="qrbtn">浪潮·状态</span>
+        </div>
+        <div class="new-seg" data-group="new">
+          <span data-v="low">低</span><span class="on" data-v="high">高</span><span data-v="xhigh">极高</span><span data-v="max">最高</span>
+        </div>
+      </div>
+      <div class="inputbar">输入想发送的消息，或输入 / 获取<span class="send">➤</span></div>
+    </div>
+    <div class="note">省掉一整排（~36px）；档位胶囊 = 描边圆角，和左边按钮同款；当前档主题色点亮；底色统一 #222327，和正文自然衔接。</div>
+  </div>
+
+</div>
+
+<script>
+document.querySelectorAll('[data-group]').forEach(g=>{
+  const items=g.querySelectorAll('[data-v]');
+  items.forEach(it=>{
+    it.addEventListener('click',()=>{
+      items.forEach(x=>x.classList.remove('on'));
+      it.classList.add('on');
+    });
+  });
+});
+</script>
+</body>
+</html>

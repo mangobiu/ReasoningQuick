@@ -1,18 +1,18 @@
 /* ============================================================
- * 推理强度快调 · 样式表  v1.3.0
+ * 推理强度快调 · 样式表  v1.4.0
  *
  * 目录：
  *   ① 魔棒菜单条目（原样保留）
- *   ② 输入框上方「档位条」——分段控件（v1.3.0 重做）
+ *   ② 档位条 —— 与快捷回复栏合并 / 独立两用
  *
- * 想微调档位条，只改 #rqs_bar 里那几个 --rqs-* 变量就行：
- *   --rqs-inset     左右留白（默认 8px，想和输入框对齐就改成和输入框一样的值）
- *   --rqs-track-bg  整条底板颜色
- *   --rqs-active-bg 当前档位的底色
+ * v1.4.0 设计标准（和快捷回复按钮完全同款）：
+ *   - 胶囊：透明底 + 1px 描边 + 全圆角，高 28px，字号 12px
+ *   - 当前档：主题强调色底(var(--SmartThemeEmColor)) + 白字
+ *   - 自身背景全透明：不再有独立底色，随所在容器走
  *
- * 颜色统一用「中性灰 + 透明度」写法 rgba(128,128,128,x)：
- * 深色主题下它是"浅一点的灰"，浅色主题下自动变成"深一点的灰"，
- * 不会像写死颜色那样换主题就翻车。
+ * 想微调只改这几个变量：
+ *   --rqs-h        胶囊高度(默认 28px)
+ *   --rqs-minw     胶囊最小宽(窄屏挤压保险,默认 40px)
  * ============================================================ */
 
 /* ---------- ① 魔棒菜单条目 ---------- */
@@ -64,58 +64,80 @@
     font-weight: 600;
 }
 
-/* ---------- ② 输入框上方档位条：分段控件 ---------- */
+/* ---------- ② 档位条 ---------- */
 
 #rqs_bar {
-    /* ===== 可调参数（改这三行就能换大小 / 颜色） ===== */
-    --rqs-inset: 8px;
-    --rqs-track-bg: rgba(128, 128, 128, 0.10);
-    --rqs-track-line: rgba(128, 128, 128, 0.12);
-    --rqs-active-bg: rgba(128, 128, 128, 0.30);
+    --rqs-h: 28px;
+    --rqs-minw: 40px;
 
+    /* 自身永远透明：亮不亮由所在容器(或自定义CSS)决定 */
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    display: flex;
+    align-items: center;
+}
+
+/* 独立模式(没有快捷回复栏时,退回输入框上方):整行靠右 */
+#rqs_bar:not(.rqs-inline) {
     width: 100%;
     box-sizing: border-box;
-    display: flex;
-    justify-content: flex-end;   /* 靠右，宽度只包住内容 */
-    align-items: center;
-    padding: 0 var(--rqs-inset);
+    justify-content: flex-end;
+    padding: 0 8px;
     margin: 2px 0 3px;
 }
 
-/* 里面的灰色底板：把四个档位框成"一个控件" */
+/* 并入模式(快捷回复栏内):作为 flex 项靠右,不吃多余留白 */
+#rqs_bar.rqs-inline {
+    flex: 0 0 auto;
+    width: auto;
+    margin: 0 0 0 auto;   /* 推到最右 */
+    padding: 0;
+    max-width: 62%;       /* 窄屏时给左边 QR 按钮留地,超出由底板横滚兜底 */
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+#rqs_bar.rqs-inline::-webkit-scrollbar { display: none; }
+
+/* 底板：v1.4.0 起透明,不再有"灰色槽" */
 #rqs_bar .rqs-seg {
     display: flex;
-    gap: 2px;
-    padding: 2px;
-    border-radius: 9px;
-    background: var(--rqs-track-bg);
-    border: 1px solid var(--rqs-track-line);
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    background: transparent;
+    border: none;
     max-width: 100%;
 }
 
+/* 胶囊：和快捷回复按钮同款 */
 #rqs_bar .rqs-bchip {
     flex: 0 0 auto;
-    min-width: 50px;             /* 固定最小宽度：加粗切换时不会跳版 */
-    height: 26px;
+    min-width: var(--rqs-minw);
+    height: var(--rqs-h);
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0 6px;
-    border: 0;
-    border-radius: 7px;
+    padding: 0 10px;
+    box-sizing: border-box;
+    border: 1px solid var(--SmartThemeBorderColor, rgba(128, 128, 128, 0.5));
+    border-radius: 999px;
     background: transparent;
     font-size: 12px;
     line-height: 1;
     color: var(--SmartThemeBodyColor, #d6d6d6);
-    opacity: 0.5;
+    opacity: 0.72;
     cursor: pointer;
     user-select: none;
+    white-space: nowrap;
     -webkit-tap-highlight-color: transparent;
     transition: background 0.15s ease, opacity 0.15s ease, transform 0.1s ease;
 }
 
 #rqs_bar .rqs-bchip.rqs-active {
-    background: var(--rqs-active-bg);
+    background: var(--SmartThemeEmColor, #7a63cf);
+    border-color: transparent;
+    color: #ffffff;
     opacity: 1;
     font-weight: 600;
 }
